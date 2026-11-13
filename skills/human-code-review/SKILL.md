@@ -149,13 +149,15 @@ Question <CURRENT> of <TOTAL>
 (F) Bug (optional justification)
 ```
 
-After an answer has been collected, say which option was chosen and whether it was correct.
+Each question is a three-turn exchange, finished before the next question is shown:
+
+1. You ask the question; the user answers.
+2. You say which option was chosen and whether it was correct, then ask for comprehension feedback in the same message (format below); the user answers.
+3. You record the feedback and show the next question.
 
 If the answer was "(F) Bug", ask for a short justification if none was given, then assess whether this is likely a genuine bug, using any justification as supporting evidence. Explain the reasoning to the user. Either way, count it as a wrong answer for scoring purposes — but if it is likely a genuine bug, also record it as a confirmed bug.
 
-## 8. Collect comprehension feedback
-
-After each answer, collect comprehension feedback. Take free text if offered, but don't demand it.
+Comprehension feedback: take free text if offered, but don't demand it.
 
 ```
 ❓ **<ask for comprehension feedback for the previous question>**
@@ -166,17 +168,17 @@ After each answer, collect comprehension feedback. Take free text if offered, bu
 (D) The question itself was unclear
 ```
 
-## 9. Diagnose weak understanding
+## 8. Diagnose weak understanding
 
 Where answers are wrong or uncertainty clusters, decide whether the cause is (A) a knowledge gap, (B) unclear or needlessly complex code, or (C) an ambiguous question — possibly a mix. Don't default to (A). If (C), say so explicitly and don't treat that question as a reliable signal.
 
 If a wrong answer matches the behaviour on an overlapping branch, classify it as (C), leave it out of the score, and score against the remaining questions.
 
-## 10. Improve code the questions exposed as hard to understand
+## 9. Improve code the questions exposed as hard to understand
 
 When feedback or diagnosis points to (B): name the likely source of difficulty, explain it briefly, propose a clearer implementation, and — where the workflow allows — offer to apply it. Good targets: clearer names, flatter control flow, explicit state transitions and side effects, error handling moved closer to its trigger, clearer transaction boundaries, decomposed dense logic. The bar is "easier to predict correctly," not "longer."
 
-## 11. Score
+## 10. Score
 
 Pass threshold 70%, required-correct rounded up:
 
@@ -190,7 +192,7 @@ Pass threshold 70%, required-correct rounded up:
 
 Say: "<CORRECT> correct out of <TOTAL>."
 
-## 12. Record the result
+## 11. Record the result
 
 Only run this step if the score meets the pass threshold AND no confirmed bugs were found — a confirmed bug always blocks the understanding statement, even on a passing score.
 
@@ -213,13 +215,13 @@ Use the following format if the GitHub repo is not known:
 <!-----END HUMAN UNDERSTANDING STATEMENT----->
 ```
 
-## 13. Sending a comment to the PR
+## 12. Sending a comment to the PR
 
 Offer to post the text as a comment to the PR of the reviewed branch (on a stack, that layer's own PR, not the bottom one). Only post the human understanding statement, not the score or failure details.
 
 If this repo has a signature skill (e.g. `.agents/skills/signature`) for marking AI-generated PR/ticket text, append its signature line to the posted comment.
 
-## 14. Handle failure
+## 13. Handle failure
 
 If one or more confirmed bugs were found, DISAPPROVAL_TEXT is "Too many errors in the code. Fix them and run human-code-review again." — this always applies when a confirmed bug exists, even if the score meets the pass threshold; a confirmed bug blocks the understanding statement regardless of score. Otherwise, if the score does not meet the pass threshold, DISAPPROVAL_TEXT is "You have not demonstrated that you understand this change."
 
