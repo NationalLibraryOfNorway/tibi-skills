@@ -24,6 +24,7 @@ Gather:
 - any architecture/domain docs for the area (treat them as supplementary evidence, every question must be traceable to the actual current code, not to what the docs say it should do)
 - if there's a PR for the current branch, get its title and description (`gh pr view --json title,body`)
 - if there's a ticket or issue, get its title and description
+- open PRs outside this branch's stack that touch the same files, found as described under "Overlapping branches" below
 
 Don't require the code to build or CI to be green; comprehension of the diff as written doesn't depend on either.
 
@@ -65,6 +66,24 @@ If `gh pr view --json baseRefName` names a branch other than the trunk, mention 
 
 Before generating questions, show the developer the base (short SHA, source: gh stack / chosen branch / merge-base with origin/main), the number of commits and the changed-file count in `<base>..<head>`, and ask them to confirm. If the source was gh stack and nothing disagrees, this is a statement, not a question.
 
+### Overlapping branches
+
+The developer may already have changed this code on a parallel branch, one not stacked on this one. Their mental model then follows that branch, not this layer, so questions about that code test the wrong thing.
+
+List the developer's open PRs whose files overlap this layer's diff:
+
+```bash
+gh pr list --author @me --state open --json number,title,headRefName,files \
+  | jq -r --argjson own "$(git diff --name-only <base>..<head> | jq -R . | jq -s .)" \
+    '.[] | select([.files[].path] | any(. as $p | $own | index($p))) | "#\(.number) \(.headRefName): \(.title)"'
+```
+
+Drop the PRs that belong to this branch's own stack. Add any PR that the PR description names as conflicting or superseding. For each remaining PR, check which of the overlapping code it rewrites or removes (`gh pr diff <n>`).
+
+Show them together with the base confirmation:
+
+> These PRs outside the stack also change code in this change: #<n> (<what it rewrites>). I'll avoid questions about that code unless you want them included.
+
 ## 3. Map comprehension-critical areas
 
 Before writing questions, scan the diff for what the developer must understand:
@@ -79,6 +98,8 @@ Separately, flag comprehensibility risks in the code itself: ambiguous naming, d
 ## 4. Generate the questions
 
 Count: 3 for a small/simple change, 5 by default, up to 7 for a complex one.
+
+Don't ask about code that an overlapping PR rewrites or removes, unless the developer asked to include it. If you can't reach the question count without that code, say "in this branch, before #<n>" in the question body.
 
 Mix across these five kinds, grounding every one in the actual diff — include at least one prediction or failure-mode question whenever the change has meaningful behaviour of that kind:
 
@@ -141,6 +162,8 @@ After each answer, collect comprehension feedback. Take free text if offered, bu
 ## 9. Diagnose weak understanding
 
 Where answers are wrong or uncertainty clusters, decide whether the cause is (A) a knowledge gap, (B) unclear or needlessly complex code, or (C) an ambiguous question — possibly a mix. Don't default to (A). If (C), say so explicitly and don't treat that question as a reliable signal.
+
+If a wrong answer matches the behaviour on an overlapping branch, classify it as (C), leave it out of the score, and score against the remaining questions.
 
 ## 10. Improve code the questions exposed as hard to understand
 
