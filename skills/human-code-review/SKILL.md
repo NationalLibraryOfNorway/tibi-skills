@@ -66,7 +66,12 @@ Try these in order and stop at the first that gives an answer. `gh stack` and `g
 
 If `gh pr view --json baseRefName` names a branch other than the trunk, mention it when it disagrees with the base you found. Don't use it as the source: a PR's base is often left at `main` on stacked branches.
 
-Before generating questions, show the developer the base (short SHA, source: gh stack / chosen branch / merge-base with origin/main), the number of commits and the changed-file count in `<base>..<head>`, and ask them to confirm. If the source was gh stack and nothing disagrees, this is a statement, not a question.
+Before generating questions, show the developer:
+
+- HEAD: short SHA and comment equivalent to git log `--oneline`
+- Base: short SHA and comment equivalent to tig log `--oneline`
+- Scope: the number of commits, number of files, and the number of lines added/removed
+- Stack: if this is a layer in a GitHub stack, state which one
 
 ### Overlapping branches
 
