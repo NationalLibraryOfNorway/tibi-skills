@@ -40,19 +40,21 @@ Try these in order and stop at the first that gives an answer. `gh stack` and `g
    gh stack view --json | jq -r --arg b "$(git branch --show-current)" '.branches[] | select(.name == $b) | .base'
    ```
 
-   `base` is the SHA of the parent layer's tip that this branch was last built on (the trunk SHA for the bottom layer). It stays valid after the parent has been squash-merged or its local branch deleted, because the commit is still in this branch's history. If `needsRebase` is true for this branch, the parent was rewritten since; the base SHA still delimits this layer's commits, so tell the developer that the stack needs a `gh stack rebase` but continue. State the base and where it came from; no confirmation needed.
+   `base` is the SHA of the parent layer's tip that this branch was last built on (the trunk SHA for the bottom layer; gh stack takes the trunk from the local `main`, so if `base` is an ancestor of `origin/main`, use `git merge-base HEAD origin/main` instead, since a stale `main` would pull other people's commits into the review). It stays valid after the parent has been squash-merged or its local branch deleted, because the commit is still in this branch's history. If `needsRebase` is true for this branch, the parent was rewritten since; the base SHA still delimits this layer's commits, so tell the developer that the stack needs a `gh stack rebase` but continue. State the base and where it came from; no confirmation needed.
 
 2. **Stacked branch without a gh stack.** Some branches are stacked without anyone having run `gh stack init`. List local and `origin/` branches whose tip is an ancestor of HEAD but not of the trunk (`origin/main`), nearest first:
 
    ```bash
+   branch=$(git branch --show-current)
    for b in $(git for-each-ref --format='%(refname:short)' refs/heads refs/remotes/origin); do
+     case "$b" in "$branch" | "origin/$branch") continue ;; esac
      [ "$(git rev-parse "$b")" = "$(git rev-parse HEAD)" ] && continue
      git merge-base --is-ancestor "$b" HEAD && ! git merge-base --is-ancestor "$b" origin/main &&
        echo "$(git rev-list --count "$b"..HEAD) $b"
    done | sort -n
    ```
 
-   Branches sharing HEAD's commit or already part of `origin/main`'s history are not candidates. If there are candidates, ask the developer which to review against, nearest as the suggestion, `origin/main` last:
+   Branches sharing HEAD's commit or already part of `origin/main`'s history are not candidates. Neither are the current branch and its own `origin/<branch>`: when the remote is behind HEAD, its tip is an ancestor of HEAD and would be picked as the branch's own parent. If there are candidates, ask the developer which to review against, nearest as the suggestion, `origin/main` last:
 
    > Which branch do you want to review against: <nearest> (suggested), <next>, …, origin/main?
 
