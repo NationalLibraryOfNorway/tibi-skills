@@ -24,6 +24,7 @@ Gather:
 - any architecture/domain docs for the area (treat them as supplementary evidence, every question must be traceable to the actual current code, not to what the docs say it should do)
 - if there's a PR for the current branch, get its title and description (`gh pr view --json title,body`)
 - if there's a ticket or issue, get its title and description
+- open PRs outside this branch's stack that touch the same files, found as described under "Overlapping branches" below
 
 Don't require the code to build or CI to be green; comprehension of the diff as written doesn't depend on either.
 
@@ -39,19 +40,21 @@ Try these in order and stop at the first that gives an answer. `gh stack` and `g
    gh stack view --json | jq -r --arg b "$(git branch --show-current)" '.branches[] | select(.name == $b) | .base'
    ```
 
-   `base` is the SHA of the parent layer's tip that this branch was last built on (the trunk SHA for the bottom layer). It stays valid after the parent has been squash-merged or its local branch deleted, because the commit is still in this branch's history. If `needsRebase` is true for this branch, the parent was rewritten since; the base SHA still delimits this layer's commits, so tell the developer that the stack needs a `gh stack rebase` but continue. State the base and where it came from; no confirmation needed.
+   `base` is the SHA of the parent layer's tip that this branch was last built on (the trunk SHA for the bottom layer; gh stack takes the trunk from the local `main`, so if `base` is an ancestor of `origin/main`, use `git merge-base HEAD origin/main` instead, since a stale `main` would pull other people's commits into the review). It stays valid after the parent has been squash-merged or its local branch deleted, because the commit is still in this branch's history. If `needsRebase` is true for this branch, the parent was rewritten since; the base SHA still delimits this layer's commits, so tell the developer that the stack needs a `gh stack rebase` but continue. State the base and where it came from; no confirmation needed.
 
 2. **Stacked branch without a gh stack.** Some branches are stacked without anyone having run `gh stack init`. List local and `origin/` branches whose tip is an ancestor of HEAD but not of the trunk (`origin/main`), nearest first:
 
    ```bash
+   branch=$(git branch --show-current)
    for b in $(git for-each-ref --format='%(refname:short)' refs/heads refs/remotes/origin); do
+     case "$b" in "$branch" | "origin/$branch") continue ;; esac
      [ "$(git rev-parse "$b")" = "$(git rev-parse HEAD)" ] && continue
      git merge-base --is-ancestor "$b" HEAD && ! git merge-base --is-ancestor "$b" origin/main &&
        echo "$(git rev-list --count "$b"..HEAD) $b"
    done | sort -n
    ```
 
-   Branches sharing HEAD's commit or already part of `origin/main`'s history are not candidates. If there are candidates, ask the developer which to review against, nearest as the suggestion, `origin/main` last:
+   Branches sharing HEAD's commit or already part of `origin/main`'s history are not candidates. Neither are the current branch and its own `origin/<branch>`: when the remote is behind HEAD, its tip is an ancestor of HEAD and would be picked as the branch's own parent. If there are candidates, ask the developer which to review against, nearest as the suggestion, `origin/main` last:
 
    > Which branch do you want to review against: <nearest> (suggested), <next>, …, origin/main?
 
@@ -63,7 +66,30 @@ Try these in order and stop at the first that gives an answer. `gh stack` and `g
 
 If `gh pr view --json baseRefName` names a branch other than the trunk, mention it when it disagrees with the base you found. Don't use it as the source: a PR's base is often left at `main` on stacked branches.
 
-Before generating questions, show the developer the base (short SHA, source: gh stack / chosen branch / merge-base with origin/main), the number of commits and the changed-file count in `<base>..<head>`, and ask them to confirm. If the source was gh stack and nothing disagrees, this is a statement, not a question.
+Before generating questions, show the developer:
+
+- HEAD: short SHA and comment equivalent to git log `--oneline`
+- Base: short SHA and comment equivalent to tig log `--oneline`
+- Scope: the number of commits, number of files, and the number of lines added/removed
+- Stack: if this is a layer in a GitHub stack, state which one
+
+### Overlapping branches
+
+The developer may already have changed this code on a parallel branch, one not stacked on this one. Their mental model then follows that branch, not this layer, so questions about that code test the wrong thing.
+
+List the developer's open PRs whose files overlap this layer's diff:
+
+```bash
+gh pr list --author @me --state open --json number,title,headRefName,files \
+  | jq -r --argjson own "$(git diff --name-only <base>..<head> | jq -R . | jq -s .)" \
+    '.[] | select([.files[].path] | any(. as $p | $own | index($p))) | "#\(.number) \(.headRefName): \(.title)"'
+```
+
+Drop the PRs that belong to this branch's own stack. Add any PR that the PR description names as conflicting or superseding. For each remaining PR, check which of the overlapping code it rewrites or removes (`gh pr diff <n>`).
+
+Show them together with the base confirmation:
+
+> These PRs outside the stack also change code in this change: #<n> (<what it rewrites>). I'll avoid questions about that code unless you want them included.
 
 ## 3. Map comprehension-critical areas
 
@@ -78,7 +104,12 @@ Separately, flag comprehensibility risks in the code itself: ambiguous naming, d
 
 ## 4. Generate the questions
 
-Count: 3 for a small/simple change, 5 by default, up to 7 for a complex one.
+Count, measured over added and changed lines only (a file deleted in full counts as neither lines nor files):
+
+- Trivial change (≤ 15 lines, and for code also ≤ 3 files): 2 for code, 1 for documentation or pure deletion. A trivial change that touches security or authentication, database transactions or locks, concurrency, deletion or migration of data, or a business rule defined in `GLOSSARY.md` takes the count below instead.
+- Otherwise: 3 for a small/simple change, 5 by default, up to 7 for a complex one.
+
+Don't ask about code that an overlapping PR rewrites or removes, unless the developer asked to include it. If you can't reach the question count without that code, say "in this branch, before #<n>" in the question body.
 
 Mix across these five kinds, grounding every one in the actual diff — include at least one prediction or failure-mode question whenever the change has meaningful behaviour of that kind:
 
@@ -106,6 +137,8 @@ Show this note once: "If you understand what happens but believe it is a bug, us
 
 One question at a time. Record the answer; allow an explicit "I don't know" — it counts as incorrect but is a real signal of uncertainty, not noise to discard. Also allow an explicit "Bug" - it counts as incorrect, but changes text in the summary.
 
+Do not output educational insights (e.g. `★ Insight` blocks) while the quiz is running, from the first question until the score is shown. They can reveal the answer.
+
 Each question should be formatted like so:
 
 ```
@@ -121,13 +154,15 @@ Question <CURRENT> of <TOTAL>
 (F) Bug (optional justification)
 ```
 
-After an answer has been collected, say which option was chosen and whether it was correct.
+Each question is a three-turn exchange, finished before the next question is shown:
+
+1. You ask the question; the user answers.
+2. You say which option was chosen and whether it was correct, then ask for comprehension feedback in the same message (format below); the user answers.
+3. You record the feedback and show the next question.
 
 If the answer was "(F) Bug", ask for a short justification if none was given, then assess whether this is likely a genuine bug, using any justification as supporting evidence. Explain the reasoning to the user. Either way, count it as a wrong answer for scoring purposes — but if it is likely a genuine bug, also record it as a confirmed bug.
 
-## 8. Collect comprehension feedback
-
-After each answer, collect comprehension feedback. Take free text if offered, but don't demand it.
+Comprehension feedback: take free text if offered, but don't demand it.
 
 ```
 ❓ **<ask for comprehension feedback for the previous question>**
@@ -138,20 +173,24 @@ After each answer, collect comprehension feedback. Take free text if offered, bu
 (D) The question itself was unclear
 ```
 
-## 9. Diagnose weak understanding
+## 8. Diagnose weak understanding
 
 Where answers are wrong or uncertainty clusters, decide whether the cause is (A) a knowledge gap, (B) unclear or needlessly complex code, or (C) an ambiguous question — possibly a mix. Don't default to (A). If (C), say so explicitly and don't treat that question as a reliable signal.
 
-## 10. Improve code the questions exposed as hard to understand
+If a wrong answer matches the behaviour on an overlapping branch, classify it as (C), leave it out of the score, and score against the remaining questions.
+
+## 9. Improve code the questions exposed as hard to understand
 
 When feedback or diagnosis points to (B): name the likely source of difficulty, explain it briefly, propose a clearer implementation, and — where the workflow allows — offer to apply it. Good targets: clearer names, flatter control flow, explicit state transitions and side effects, error handling moved closer to its trigger, clearer transaction boundaries, decomposed dense logic. The bar is "easier to predict correctly," not "longer."
 
-## 11. Score
+## 10. Score
 
 Pass threshold 70%, required-correct rounded up:
 
 | questions | required |
 | --------- | -------- |
+| 1         | 1        |
+| 2         | 2        |
 | 3         | 2        |
 | 4         | 3        |
 | 5         | 4        |
@@ -160,7 +199,7 @@ Pass threshold 70%, required-correct rounded up:
 
 Say: "<CORRECT> correct out of <TOTAL>."
 
-## 12. Record the result
+## 11. Record the result
 
 Only run this step if the score meets the pass threshold AND no confirmed bugs were found — a confirmed bug always blocks the understanding statement, even on a passing score.
 
@@ -183,13 +222,13 @@ Use the following format if the GitHub repo is not known:
 <!-----END HUMAN UNDERSTANDING STATEMENT----->
 ```
 
-## 13. Sending a comment to the PR
+## 12. Sending a comment to the PR
 
 Offer to post the text as a comment to the PR of the reviewed branch (on a stack, that layer's own PR, not the bottom one). Only post the human understanding statement, not the score or failure details.
 
 If this repo has a signature skill (e.g. `.agents/skills/signature`) for marking AI-generated PR/ticket text, append its signature line to the posted comment.
 
-## 14. Handle failure
+## 13. Handle failure
 
 If one or more confirmed bugs were found, DISAPPROVAL_TEXT is "Too many errors in the code. Fix them and run human-code-review again." — this always applies when a confirmed bug exists, even if the score meets the pass threshold; a confirmed bug blocks the understanding statement regardless of score. Otherwise, if the score does not meet the pass threshold, DISAPPROVAL_TEXT is "You have not demonstrated that you understand this change."
 
