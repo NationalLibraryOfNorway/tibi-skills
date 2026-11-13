@@ -104,7 +104,10 @@ Separately, flag comprehensibility risks in the code itself: ambiguous naming, d
 
 ## 4. Generate the questions
 
-Count: 3 for a small/simple change, 5 by default, up to 7 for a complex one.
+Count, measured over added and changed lines only (a file deleted in full counts as neither lines nor files):
+
+- Trivial change (≤ 15 lines, and for code also ≤ 3 files): 2 for code, 1 for documentation or pure deletion. A trivial change that touches security or authentication, database transactions or locks, concurrency, deletion or migration of data, or a business rule defined in `GLOSSARY.md` takes the count below instead.
+- Otherwise: 3 for a small/simple change, 5 by default, up to 7 for a complex one.
 
 Don't ask about code that an overlapping PR rewrites or removes, unless the developer asked to include it. If you can't reach the question count without that code, say "in this branch, before #<n>" in the question body.
 
@@ -133,6 +136,8 @@ Show this note once: "If you understand what happens but believe it is a bug, us
 ## 7. Ask the questions
 
 One question at a time. Record the answer; allow an explicit "I don't know" — it counts as incorrect but is a real signal of uncertainty, not noise to discard. Also allow an explicit "Bug" - it counts as incorrect, but changes text in the summary.
+
+Do not output educational insights (e.g. `★ Insight` blocks) while the quiz is running, from the first question until the score is shown. They can reveal the answer.
 
 Each question should be formatted like so:
 
@@ -184,6 +189,8 @@ Pass threshold 70%, required-correct rounded up:
 
 | questions | required |
 | --------- | -------- |
+| 1         | 1        |
+| 2         | 2        |
 | 3         | 2        |
 | 4         | 3        |
 | 5         | 4        |
