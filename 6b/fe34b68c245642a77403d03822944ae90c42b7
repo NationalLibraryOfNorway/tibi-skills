@@ -1,0 +1,21 @@
+skills/human-code-review/SKILL.md
+  s_106dc66919b27a::t_6bcecc0411905d 57
+  s_106dc66919b27a::t_911434dd53b1cf 48,50
+  s_106dc66919b27a::t_7821a17dc1590b 43
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6bfe34b68c245642a77403d03822944ae90c42b7",
+  "prompts": {},
+  "sessions": {
+    "s_106dc66919b27a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "73570198-c670-4111-b8c0-fe07744d9b23",
+        "model": "claude-haiku-5-5"
+      },
+      "human_author": "Jostein Austvik Jacobsen <jostein.jacobsen@nb.no>"
+    }
+  }
+}
