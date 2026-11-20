@@ -1,0 +1,45 @@
+skills/human-code-review/SKILL.md
+  s_106dc66919b27a::t_2e42d96bbf4bab 76-93
+  s_106dc66919b27a::t_9d40f935e477a2 27
+  s_106dc66919b27a::t_b8ad39044d1847 112-113
+  s_106dc66919b27a::t_b21f6ad8700bdd 180-181
+  s_106dc66919b27a::t_6bcecc0411905d 57
+  s_106dc66919b27a::t_911434dd53b1cf 48,50
+  s_106dc66919b27a::t_7821a17dc1590b 43
+  s_106dc66919b27a::t_3db1ea8e14e1f4 69-74
+  s_106dc66919b27a::t_f6ef512bb5d88a 202
+  s_106dc66919b27a::t_99cd831df83361 157,159-161,163,165
+  s_106dc66919b27a::t_502f8b0b5c1280 186
+  s_106dc66919b27a::t_f979c9c3e1a8a8 231
+  s_106dc66919b27a::t_998ce1b69797f1 176
+  s_106dc66919b27a::t_d0543c627f6229 182
+  s_106dc66919b27a::t_7f94bbfcda75c3 140-141
+  s_106dc66919b27a::t_38aa9a1c2fe8bb 192-193
+  s_106dc66919b27a::t_1abe58434599a1 107-110
+  s_1b59170c97def2::t_0eb493247c745b 225,227
+  s_1b59170c97def2::t_ac75fe28606612 229
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2f62c555619f56a780a93a48b39cce7791190c29",
+  "prompts": {},
+  "sessions": {
+    "s_106dc66919b27a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "73570198-c670-4111-b8c0-fe07744d9b23",
+        "model": "claude-haiku-5-5"
+      },
+      "human_author": "Jostein Austvik Jacobsen <jostein.jacobsen@nb.no>"
+    },
+    "s_1b59170c97def2": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "14e3af09-63c6-4e8f-bd59-914c95c9084c",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Jostein Austvik Jacobsen <jostein.jacobsen@nb.no>"
+    }
+  }
+}
