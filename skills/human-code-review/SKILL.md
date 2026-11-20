@@ -106,7 +106,7 @@ Separately, flag comprehensibility risks in the code itself: ambiguous naming, d
 
 Count, measured over added and changed lines only (a file deleted in full counts as neither lines nor files):
 
-- Trivial change (≤ 15 lines, and for code also ≤ 3 files): 2 for code, 1 for documentation or pure deletion. A trivial change that touches security or authentication, database transactions or locks, concurrency, deletion or migration of data, or a business rule defined in `GLOSSARY.md` takes the count below instead.
+- Trivial change (≤ 15 lines, and for code also ≤ 3 files): 2 for code, 1 for documentation or pure deletion. A trivial change that touches security or authentication, database transactions or locks, concurrency, deletion or migration of data, or a documented business rule takes the count below instead.
 - Otherwise: 3 for a small/simple change, 5 by default, up to 7 for a complex one.
 
 Don't ask about code that an overlapping PR rewrites or removes, unless the developer asked to include it. If you can't reach the question count without that code, say "in this branch, before #<n>" in the question body.
@@ -222,11 +222,13 @@ Use the following format if the GitHub repo is not known:
 <!-----END HUMAN UNDERSTANDING STATEMENT----->
 ```
 
-## 12. Sending a comment to the PR
+## 12. Posting the statement to the PR
 
-Offer to post the text as a comment to the PR of the reviewed branch (on a stack, that layer's own PR, not the bottom one). Only post the human understanding statement, not the score or failure details.
+Offer to post the human understanding statement as a review comment (`gh pr review <number> --comment --body-file <file>`). It leaves the PR without approved status and works on the developer's own PR too, which GitHub does not let its author approve. When the developer explicitly asks for an approval, use `--approve`.
 
-If this repo has a signature skill (e.g. `.agents/skills/signature`) for marking AI-generated PR/ticket text, append its signature line to the posted comment.
+Post it on the PR of the reviewed branch (on a stack, that layer's own PR, not the bottom one). Post only the human understanding statement; score and failure details stay in the chat. Posting is outward-facing: wait for the developer's yes.
+
+If this repo has a signature skill (e.g. `.agents/skills/signature`) for marking AI-generated PR/ticket text, append its signature line to the posted review body.
 
 ## 13. Handle failure
 
