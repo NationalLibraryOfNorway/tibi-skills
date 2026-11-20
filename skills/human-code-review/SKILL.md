@@ -222,11 +222,11 @@ Use the following format if the GitHub repo is not known:
 <!-----END HUMAN UNDERSTANDING STATEMENT----->
 ```
 
-## 12. Sending a comment to the PR
+## 12. Posting the approval to the PR
 
-Offer to post the text as a comment to the PR of the reviewed branch (on a stack, that layer's own PR, not the bottom one). Only post the human understanding statement, not the score or failure details.
+Offer to post the human understanding statement as an approving review (`gh pr review <number> --approve --body-file <file>`) on the PR of the reviewed branch (on a stack, that layer's own PR, not the bottom one). A plain comment gives the PR no review status, so don't offer it as the default. Only post the human understanding statement, not the score or failure details. Posting is outward-facing: wait for the developer's yes.
 
-If this repo has a signature skill (e.g. `.agents/skills/signature`) for marking AI-generated PR/ticket text, append its signature line to the posted comment.
+If this repo has a signature skill (e.g. `.agents/skills/signature`) for marking AI-generated PR/ticket text, append its signature line to the posted review body.
 
 ## 13. Handle failure
 
